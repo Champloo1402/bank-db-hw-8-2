@@ -25,17 +25,21 @@ public class Transaction {
     private Currency currency;
 
     @Column(nullable = false)
-    private LocalDateTime timestamp = LocalDateTime.now();
+    private LocalDateTime timestamp;
 
     public Transaction() {
     }
 
-    public Long getId() {
-        return id;
+    public Transaction(Account senderAccount, Account recipientAccount, BigDecimal amount, Currency currency) {
+        this.senderAccount = senderAccount;
+        this.recipientAccount = recipientAccount;
+        this.amount = amount;
+        this.currency = currency;
+        this.timestamp = LocalDateTime.now();
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public Long getId() {
+        return id;
     }
 
     public Account getSenderAccount() {
@@ -72,9 +76,5 @@ public class Transaction {
 
     public LocalDateTime getTimestamp() {
         return timestamp;
-    }
-
-    public void setTimestamp(LocalDateTime timestamp) {
-        this.timestamp = timestamp;
     }
 }
