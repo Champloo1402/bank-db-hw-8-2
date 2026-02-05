@@ -54,6 +54,10 @@ public class Main {
         accountRepo.save(accountUAH);
         em.getTransaction().commit();
 
+        System.out.println("Initial balances:");
+        System.out.println("Alex USD: " + accountUSD.getBalance());
+        System.out.println("Alex UAH: " + accountUAH.getBalance());
+
         em.getTransaction().begin();
         ExchangeRate usdToUah = new ExchangeRate();
         usdToUah.setFromCurrency(Currency.USD);
@@ -64,6 +68,10 @@ public class Main {
 
         depositService.deposit(accountUSD.getId(), BigDecimal.valueOf(500), Currency.USD);
         depositService.deposit(accountUAH.getId(), BigDecimal.valueOf(2000), Currency.UAH);
+
+        System.out.println("After deposits:");
+        System.out.println("Alex USD: " + accountUSD.getBalance());
+        System.out.println("Alex UAH: " + accountUAH.getBalance());
 
         em.getTransaction().begin();
         User bob = new User();
@@ -79,10 +87,18 @@ public class Main {
 
         transferService.transfer(accountUAH.getId(), bobUAH.getId(), BigDecimal.valueOf(1500), Currency.UAH);
 
+        System.out.println("After transfer to Bob:");
+        System.out.println("Alex UAH: " + accountUAH.getBalance());
+        System.out.println("Bob UAH: " + bobUAH.getBalance());
+
         conversionService.convert(accountUSD.getId(), accountUAH.getId(), BigDecimal.valueOf(200));
 
-        BigDecimal totalAliceUAH = userFundsService.getTotalFundsInUAH(alex.getId());
-        System.out.println("Alex total funds in UAH: " + totalAliceUAH);
+        System.out.println("After conversion USD -> UAH:");
+        System.out.println("Alex USD: " + accountUSD.getBalance());
+        System.out.println("Alex UAH: " + accountUAH.getBalance());
+
+        BigDecimal totalAlexUAH = userFundsService.getTotalFundsInUAH(alex.getId());
+        System.out.println("Alex total funds in UAH: " + totalAlexUAH);
 
         em.close();
         emf.close();
