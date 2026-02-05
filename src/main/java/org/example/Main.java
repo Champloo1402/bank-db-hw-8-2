@@ -1,17 +1,90 @@
 package org.example;
 
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.Persistence;
+import org.example.model.Account;
+import org.example.model.Currency;
+import org.example.model.ExchangeRate;
+import org.example.model.User;
+import org.example.repository.AccountRepository;
+import org.example.repository.ExchangeRateRepository;
+import org.example.repository.TransactionRepository;
+import org.example.repository.UserRepository;
+import org.example.service.CurrencyConversionService;
+import org.example.service.DepositService;
+import org.example.service.TransferService;
+import org.example.service.UserFundsService;
+
+import java.math.BigDecimal;
+
 public class Main {
     public static void main(String[] args) {
-        //TIP Press <shortcut actionId="ShowIntentionActions"/> with your caret at the highlighted text
-        // to see how IntelliJ IDEA suggests fixing it.
-        System.out.printf("Hello and welcome!");
+        EntityManagerFactory emf = Persistence.createEntityManagerFactory("bankPU");
+        EntityManager em = emf.createEntityManager();
 
-        for (int i = 1; i <= 5; i++) {
-            //TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-            // for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.
-            System.out.println("i = " + i);
-        }
+        UserRepository userRepo = new UserRepository(em);
+        AccountRepository accountRepo = new AccountRepository(em);
+        TransactionRepository transactionRepo = new TransactionRepository(em);
+        ExchangeRateRepository exchangeRateRepo = new ExchangeRateRepository(em);
+
+        DepositService depositService = new DepositService(em, accountRepo, transactionRepo);
+        TransferService transferService = new TransferService(em, accountRepo, transactionRepo);
+        CurrencyConversionService conversionService = new CurrencyConversionService(em, accountRepo, transactionRepo, exchangeRateRepo);
+        UserFundsService userFundsService = new UserFundsService(accountRepo, exchangeRateRepo);
+
+        em.getTransaction().begin();
+        User alex = new User();
+        alex.setName("Alex");
+        userRepo.save(alex);
+        em.getTransaction().commit();
+
+        em.getTransaction().begin();
+        Account accountUSD = new Account();
+        accountUSD.setUser(alex);
+        accountUSD.setCurrency(Currency.USD);
+        accountUSD.setBalance(BigDecimal.valueOf(1000));
+        accountRepo.save(accountUSD);
+
+        Account accountUAH = new Account();
+        accountUAH.setUser(alex);
+        accountUAH.setCurrency(Currency.UAH);
+        accountUAH.setBalance(BigDecimal.valueOf(5000));
+        accountRepo.save(accountUAH);
+        em.getTransaction().commit();
+
+        em.getTransaction().begin();
+        ExchangeRate usdToUah = new ExchangeRate();
+        usdToUah.setFromCurrency(Currency.USD);
+        usdToUah.setToCurrency(Currency.UAH);
+        usdToUah.setRate(BigDecimal.valueOf(37)); // example rate
+        exchangeRateRepo.save(usdToUah);
+        em.getTransaction().commit();
+
+        depositService.deposit(accountUSD.getId(), BigDecimal.valueOf(500), Currency.USD);
+        depositService.deposit(accountUAH.getId(), BigDecimal.valueOf(2000), Currency.UAH);
+
+        em.getTransaction().begin();
+        User bob = new User();
+        bob.setName("Bob");
+        userRepo.save(bob);
+
+        Account bobUAH = new Account();
+        bobUAH.setUser(bob);
+        bobUAH.setCurrency(Currency.UAH);
+        bobUAH.setBalance(BigDecimal.valueOf(1000));
+        accountRepo.save(bobUAH);
+        em.getTransaction().commit();
+
+        transferService.transfer(accountUAH.getId(), bobUAH.getId(), BigDecimal.valueOf(1500), Currency.UAH);
+
+        conversionService.convert(accountUSD.getId(), accountUAH.getId(), BigDecimal.valueOf(200));
+
+        BigDecimal totalAliceUAH = userFundsService.getTotalFundsInUAH(alex.getId());
+        System.out.println("Alex total funds in UAH: " + totalAliceUAH);
+
+        em.close();
+        emf.close();
     }
 }

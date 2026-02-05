@@ -12,6 +12,10 @@ public class ExchangeRateRepository {
         this.em = em;
     }
 
+    public void save(ExchangeRate exchangeRate) {
+        em.persist(exchangeRate);
+    }
+
     public ExchangeRate findByFromAndToCurrency(Currency from, Currency to) {
         try {
             return em.createQuery(
